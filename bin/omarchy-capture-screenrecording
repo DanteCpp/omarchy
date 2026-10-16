@@ -83,10 +83,16 @@ start_webcam_overlay() {
     fi
   done
 
+  # --load-scripts=no keeps mpv-mpris off the overlay, or dictation (voxtype's
+  # pause_media) pauses the camera as a media player while it listens.
+  # format=yuv420p copies each frame out of the camera's mmap'd V4L2 buffer;
+  # rendering straight from it segfaults mpv on Apple Silicon when the overlay
+  # closes, as the buffer is unmapped while the renderer still reads it.
   mpv "av://v4l2:$WEBCAM_DEVICE" \
+    --load-scripts=no \
     --profile=low-latency --untimed --no-cache \
     --demuxer-lavf-o="$capture_options" \
-    '--vf=lavfi=[crop=ih*8/9:ih]' \
+    '--vf=lavfi=[crop=ih*8/9:ih,format=yuv420p]' \
     --title="WebcamOverlay" --wayland-app-id="WebcamOverlay-$WEBCAM_SIZE" \
     --no-border --no-audio --no-osc --osd-level=0 \
     --really-quiet &>/dev/null &
